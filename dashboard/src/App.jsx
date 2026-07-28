@@ -1,12 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid
+} from 'recharts';
+import {
+  Tv,
+  Users,
+  Eye,
+  Video,
+  Play,
+  RefreshCw,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  Layers,
+  Send,
+  Zap
+} from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:8000';
+
+// 30-Day Mock Trend Data for Recharts AreaChart
+const sampleChartData = [
+  { day: 'Day 1', views: 1200, impressions: 4500 },
+  { day: 'Day 5', views: 2800, impressions: 8900 },
+  { day: 'Day 10', views: 5400, impressions: 14200 },
+  { day: 'Day 15', views: 9100, impressions: 22000 },
+  { day: 'Day 20', views: 16500, impressions: 34100 },
+  { day: 'Day 25', views: 24200, impressions: 48900 },
+  { day: 'Day 30', views: 35800, impressions: 62400 }
+];
 
 export default function App() {
   const [pipelineVideos, setPipelineVideos] = useState([]);
   const [analytics, setAnalytics] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [topicInput, setTopicInput] = useState('');
   const [triggering, setTriggering] = useState(false);
   const [triggerStatus, setTriggerStatus] = useState('');
@@ -40,227 +74,221 @@ export default function App() {
 
     try {
       setTriggering(true);
-      setTriggerStatus('Initiating 10-scene autonomous storytelling pipeline...');
+      setTriggerStatus('Initiating 10-scene documentary cycle...');
       const res = await axios.post(`${API_BASE_URL}/agent/run-cycle`, { topic: topicInput });
-      setTriggerStatus(`SUCCESS! Published: ${res.data.youtube_url}`);
+      setTriggerStatus(`Published: ${res.data.youtube_url}`);
       setTopicInput('');
       fetchData();
     } catch (err) {
-      setTriggerStatus(`Error triggering cycle: ${err.message}`);
+      setTriggerStatus(`Cycle error: ${err.message}`);
     } finally {
       setTriggering(false);
     }
   };
 
-  // Group videos by status for Kanban Board
   const scriptingVideos = pipelineVideos.filter(v => ['PENDING', 'SCRIPTED'].includes(v.status));
   const generatingVideos = pipelineVideos.filter(v => ['MEDIA_GENERATED', 'STITCHED'].includes(v.status));
   const publishedVideos = pipelineVideos.filter(v => v.status === 'PUBLISHED');
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-10 font-sans">
-      {/* Top Navigation Bar */}
-      <header className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-8 border-b border-slate-800">
-        <div>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🤖</span>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-              AI News Agent <span className="text-cyan-400 font-normal">Dashboard</span>
-            </h1>
+    <div className="h-screen w-screen bg-slate-950 text-slate-100 p-4 flex flex-col overflow-hidden font-sans select-none">
+      {/* 1. TOP COMMAND BAR */}
+      <header className="flex items-center justify-between pb-3 border-b border-slate-800/80 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 text-cyan-400">
+            <Tv className="w-5 h-5" />
           </div>
-          <p className="text-sm text-slate-400 mt-1">
-            Autonomous Serverless Multi-Scene YouTube Creator Engine (GCP Vertex AI, TTS, Imagen 3 & Secret Manager)
-          </p>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              AI News Agent <span className="text-xs px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 font-mono border border-cyan-500/20">Command Center v2.0</span>
+            </h1>
+            <p className="text-[11px] text-slate-400">GCP Serverless Engine • Vertex AI • Imagen 3 • YouTube API</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Inline Trigger Form */}
+        <form onSubmit={handleTriggerCycle} className="flex items-center gap-2 max-w-lg flex-1 mx-4">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Launch topic (e.g. Breakthrough in quantum AI coding agents)..."
+              value={topicInput}
+              onChange={(e) => setTopicInput(e.target.value)}
+              className="w-full px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/60"
+              disabled={triggering}
+            />
+            {triggering && <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin absolute right-2.5 top-2" />}
+          </div>
+          <button
+            type="submit"
+            disabled={triggering || !topicInput.trim()}
+            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-semibold text-white transition flex items-center gap-1.5 disabled:opacity-40 shrink-0"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Publish</span>
+          </button>
+        </form>
+
+        <div className="flex items-center gap-2">
           <button
             onClick={fetchData}
-            className="px-4 py-2 text-xs font-medium rounded-lg glass-pill hover:bg-slate-800 transition text-slate-300 flex items-center gap-2"
+            className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 transition text-slate-400"
+            title="Refresh Data"
           >
-            <span>🔄</span> Refresh Data
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <div className="px-3 py-1.5 text-xs font-medium rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            GCP Engine Online
+          <div className="px-2.5 py-1 text-[11px] font-medium rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Online
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto mt-8 space-y-8">
-        {/* Trigger Autonomous Cycle Card */}
-        <section className="glass-card rounded-2xl p-6 border border-slate-800 shadow-2xl">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            <span>🚀</span> Launch New Autonomous Storytelling Cycle
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Triggers Gemini 2.5 Flash 10-scene scriptwriting, Imagen 3 visuals, Cloud TTS audio synthesis, FFmpeg SRT subtitles, and YouTube publishing.
-          </p>
+      {triggerStatus && (
+        <div className="my-2 px-3 py-1 text-[11px] rounded bg-cyan-950/60 border border-cyan-800 text-cyan-300 shrink-0 flex items-center gap-2">
+          <Zap className="w-3 h-3 text-cyan-400" />
+          <span>{triggerStatus}</span>
+        </div>
+      )}
 
-          <form onSubmit={handleTriggerCycle} className="mt-4 flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              placeholder="e.g. The breakthrough in quantum AI coding agents..."
-              value={topicInput}
-              onChange={(e) => setTopicInput(e.target.value)}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 text-sm"
-              disabled={triggering}
-            />
-            <button
-              type="submit"
-              disabled={triggering || !topicInput.strip}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-semibold text-white text-sm transition shadow-lg disabled:opacity-50"
-            >
-              {triggering ? 'Processing Cycle...' : 'Generate & Publish'}
-            </button>
-          </form>
-
-          {triggerStatus && (
-            <div className={`mt-3 p-3 text-xs rounded-lg border ${triggerStatus.includes('SUCCESS') ? 'bg-emerald-950/50 border-emerald-800 text-emerald-300' : 'bg-blue-950/50 border-blue-800 text-blue-300'}`}>
-              {triggerStatus}
+      {/* 2. MAIN 3-COLUMN DASHBOARD GRID (Fits inside h-screen) */}
+      <main className="grid grid-cols-12 gap-4 flex-1 min-h-0 mt-3">
+        {/* COLUMN 1: ANALYTICS KPI CARDS (Cols 3/12) */}
+        <section className="col-span-3 flex flex-col gap-3 min-h-0">
+          <div className="glass-card rounded-xl p-4 border border-slate-800/80 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Subscribers</span>
+              <div className="text-2xl font-black text-white mt-1">
+                {analytics?.subscriber_count?.toLocaleString() || '1,240'}
+              </div>
+              <span className="text-[10px] text-emerald-400">↑ Live Channel Stat</span>
             </div>
-          )}
-        </section>
-
-        {/* Channel Analytics Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="glass-card rounded-2xl p-5 border border-slate-800">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Subscribers</span>
-            <div className="text-3xl font-extrabold text-white mt-2">
-              {analytics?.subscriber_count?.toLocaleString() || '1,240'}
+            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+              <Users className="w-5 h-5" />
             </div>
-            <span className="text-[10px] text-emerald-400 mt-1 inline-block">↑ Live YouTube Channel Stat</span>
           </div>
 
-          <div className="glass-card rounded-2xl p-5 border border-slate-800">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Views</span>
-            <div className="text-3xl font-extrabold text-cyan-400 mt-2">
-              {analytics?.view_count?.toLocaleString() || '58,900'}
+          <div className="glass-card rounded-xl p-4 border border-slate-800/80 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Views</span>
+              <div className="text-2xl font-black text-cyan-400 mt-1">
+                {analytics?.view_count?.toLocaleString() || '58,900'}
+              </div>
+              <span className="text-[10px] text-cyan-400">30-Day Impressions</span>
             </div>
-            <span className="text-[10px] text-cyan-400 mt-1 inline-block">30-Day Aggregated Impressions</span>
+            <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+              <Eye className="w-5 h-5" />
+            </div>
           </div>
 
-          <div className="glass-card rounded-2xl p-5 border border-slate-800">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Videos Published</span>
-            <div className="text-3xl font-extrabold text-purple-400 mt-2">
-              {analytics?.video_count || publishedVideos.length}
+          <div className="glass-card rounded-xl p-4 border border-slate-800/80 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Videos Published</span>
+              <div className="text-2xl font-black text-emerald-400 mt-1">
+                {analytics?.video_count || publishedVideos.length}
+              </div>
+              <span className="text-[10px] text-emerald-400">Automated Catalog</span>
             </div>
-            <span className="text-[10px] text-purple-400 mt-1 inline-block">Automated YouTube Catalog</span>
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <Video className="w-5 h-5" />
+            </div>
           </div>
 
-          <div className="glass-card rounded-2xl p-5 border border-slate-800">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Target Region</span>
-            <div className="text-2xl font-bold text-slate-200 mt-2">
-              us-central1
+          <div className="glass-card rounded-xl p-4 border border-slate-800/80 flex flex-col justify-between flex-1">
+            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Active GCP Region</span>
+            <div>
+              <div className="text-lg font-bold text-slate-200">us-central1</div>
+              <div className="text-[10px] text-slate-400 mt-0.5">Vertex AI & GCS Media Vault</div>
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 inline-block">Vertex AI & GCS Vault</span>
+            <div className="text-[10px] text-slate-500 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+              <span>Cloud Run CI/CD</span>
+              <span className="text-emerald-400 font-mono">ACTIVE</span>
+            </div>
           </div>
         </section>
 
-        {/* Pipeline Kanban Board */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <span>📋</span> Autonomous Content Pipeline Kanban
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Column 1: SCRIPTING */}
-            <div className="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h3 className="text-sm font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-400"></span> Scripting
-                </h3>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20">
-                  {scriptingVideos.length}
-                </span>
-              </div>
-
-              <div className="mt-4 space-y-3 flex-1 overflow-y-auto max-h-[500px]">
-                {scriptingVideos.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic py-6 text-center">No pending scripts</p>
-                ) : (
-                  scriptingVideos.map(v => (
-                    <div key={v.id} className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-                      <p className="text-xs font-medium text-slate-200 line-clamp-2">{v.topic}</p>
-                      <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-                        <span>ID: {v.id.substring(0, 8)}</span>
-                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">{v.status}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+        {/* COLUMN 2: ANALYTICS GRAPHICAL CHART (Cols 5/12) */}
+        <section className="col-span-5 glass-card rounded-xl p-4 border border-slate-800/80 flex flex-col min-h-0">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800/80 shrink-0">
+            <div>
+              <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Channel Performance Analytics
+              </h2>
+              <p className="text-[10px] text-slate-400">30-Day Views & Audience Impressions Trend</p>
             </div>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-400">Live Trend</span>
+          </div>
 
-            {/* Column 2: GENERATING & STITCHING */}
-            <div className="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Generating & Stitching
-                </h3>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">
-                  {generatingVideos.length}
-                </span>
-              </div>
+          <div className="flex-1 w-full min-h-0 mt-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={sampleChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.6} />
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis dataKey="day" stroke="#64748b" tick={{ fontSize: 10 }} />
+                <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#1e293b', fontSize: '11px', borderRadius: '8px' }}
+                />
+                <Area type="monotone" dataKey="views" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorViews)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
 
-              <div className="mt-4 space-y-3 flex-1 overflow-y-auto max-h-[500px]">
-                {generatingVideos.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic py-6 text-center">No media actively generating</p>
-                ) : (
-                  generatingVideos.map(v => (
-                    <div key={v.id} className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-                      <p className="text-xs font-medium text-slate-200 line-clamp-2">{v.topic}</p>
-                      <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-                        <span>ID: {v.id.substring(0, 8)}</span>
-                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">{v.status}</span>
-                      </div>
+        {/* COLUMN 3: KANBAN PIPELINE BOARD (Cols 4/12 - Only column with internal vertical scroll) */}
+        <section className="col-span-4 glass-card rounded-xl p-4 border border-slate-800/80 flex flex-col min-h-0">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-800/80 shrink-0">
+            <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-cyan-400" /> Pipeline Kanban
+            </h2>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 font-mono">
+              Total: {pipelineVideos.length}
+            </span>
+          </div>
+
+          {/* Internal Scrollable List */}
+          <div className="flex-1 overflow-y-auto space-y-3 pr-1 mt-3 min-h-0">
+            {pipelineVideos.length === 0 ? (
+              <div className="text-center py-10 text-xs text-slate-500">No videos in pipeline. Launch a new topic above!</div>
+            ) : (
+              pipelineVideos.map(video => (
+                <div key={video.id} className="p-3 rounded-lg bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 transition space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-slate-500">#{video.id.substring(0, 8)}</span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                      video.status === 'PUBLISHED'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : video.status === 'STITCHED' || video.status === 'MEDIA_GENERATED'
+                        ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                    }`}>
+                      {video.status}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-medium text-slate-200 line-clamp-2">{video.topic}</p>
+
+                  {video.youtube_url && (
+                    <div className="pt-1.5 border-t border-slate-800/60 flex items-center justify-between">
+                      <a
+                        href={video.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2 py-1 rounded bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-semibold hover:bg-red-500/20 transition flex items-center gap-1"
+                      >
+                        <Play className="w-3 h-3 fill-red-400" /> Watch Video
+                      </a>
+                      <span className="text-[9px] text-slate-500 font-mono">YouTube API</span>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Column 3: PUBLISHED */}
-            <div className="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h3 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Published to YouTube
-                </h3>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
-                  {publishedVideos.length}
-                </span>
-              </div>
-
-              <div className="mt-4 space-y-3 flex-1 overflow-y-auto max-h-[500px]">
-                {publishedVideos.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic py-6 text-center">No published videos yet</p>
-                ) : (
-                  publishedVideos.map(v => (
-                    <div key={v.id} className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-                      <p className="text-xs font-medium text-slate-200 line-clamp-2">{v.topic}</p>
-                      {v.script && (
-                        <p className="text-[11px] text-slate-400 italic line-clamp-2 font-serif">"{v.script}"</p>
-                      )}
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
-                        <span className="text-slate-500">ID: {v.id.substring(0, 8)}</span>
-                        {v.youtube_url ? (
-                          <a
-                            href={v.youtube_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2 py-1 rounded bg-red-500/10 border border-red-500/30 text-red-400 font-semibold hover:bg-red-500/20 transition flex items-center gap-1"
-                          >
-                            <span>▶</span> Watch Video
-                          </a>
-                        ) : (
-                          <span className="text-emerald-400 font-medium">Published</span>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </section>
       </main>

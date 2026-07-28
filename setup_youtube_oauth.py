@@ -1,5 +1,5 @@
 # setup_youtube_oauth.py
-# One-time script to perform YouTube OAuth 2.0 authorization
+# One-time script to perform YouTube OAuth 2.0 authorization (with Upload, Readonly & Analytics scopes)
 # and store the resulting refresh token in Google Cloud Secret Manager.
 
 import os
@@ -22,7 +22,11 @@ from google.cloud import secretmanager
 
 PROJECT_ID = "gen-lang-client-0771706827"
 SECRET_NAME = "youtube-refresh-token"
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/yt-analytics.readonly"
+]
 
 
 def main():
@@ -41,7 +45,7 @@ def main():
         SCOPES
     )
 
-    print("Opening browser for YouTube authorization...")
+    print("Opening browser for YouTube authorization (Upload, Readonly & Analytics scopes)...")
     creds = flow.run_local_server(port=8088, prompt="consent", access_type="offline", open_browser=True)
 
     token_payload = {
@@ -52,7 +56,7 @@ def main():
 
     token_json = json.dumps(token_payload)
 
-    print(f"\n[GCP Secret Manager] Storing refresh token in secret '{SECRET_NAME}'...")
+    print(f"\n[GCP Secret Manager] Storing multi-scope refresh token in secret '{SECRET_NAME}'...")
     client = secretmanager.SecretManagerServiceClient()
     parent = f"projects/{PROJECT_ID}"
 
@@ -74,7 +78,7 @@ def main():
         }
     )
 
-    print(f"\n[SUCCESS] Refresh token stored successfully in Secret Manager!")
+    print(f"\n[SUCCESS] Refresh token with YouTube Analytics & Upload scopes stored successfully in Secret Manager!")
     print(f"Version: {version.name}\n")
 
 

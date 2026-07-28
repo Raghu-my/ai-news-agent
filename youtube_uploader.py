@@ -11,6 +11,11 @@ from googleapiclient.http import MediaFileUpload
 
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "gen-lang-client-0771706827")
 SECRET_NAME = os.getenv("YOUTUBE_SECRET_NAME", "youtube-refresh-token")
+OAUTH_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/yt-analytics.readonly"
+]
 
 
 def get_youtube_refresh_token() -> Optional[str]:
@@ -42,7 +47,7 @@ def get_youtube_credentials() -> Optional[Credentials]:
                 client_id=secret_dict.get("client_id"),
                 client_secret=secret_dict.get("client_secret"),
                 token_uri="https://oauth2.googleapis.com/token",
-                scopes=["https://www.googleapis.com/auth/youtube.upload"]
+                scopes=OAUTH_SCOPES
             )
         else:
             client_id = os.getenv("YOUTUBE_CLIENT_ID", "")
@@ -53,7 +58,7 @@ def get_youtube_credentials() -> Optional[Credentials]:
                 client_id=client_id,
                 client_secret=client_secret,
                 token_uri="https://oauth2.googleapis.com/token",
-                scopes=["https://www.googleapis.com/auth/youtube.upload"]
+                scopes=OAUTH_SCOPES
             )
     except Exception as e:
         print(f"[YouTube Auth Error] Failed to construct Credentials: {e}")

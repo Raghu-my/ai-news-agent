@@ -12,3 +12,6 @@ __pycache__/
 .system_generated/
 *.log
 last_cycle_result.json
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.vite/
