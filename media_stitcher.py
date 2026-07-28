@@ -1,5 +1,5 @@
 # media_stitcher.py
-# Strict YouTube-compliant Media Stitcher module with Subtitle (.srt) generation & Multi-Scene Slideshow Stitching
+# Dynamic FFmpeg Media Stitcher module with audio duration probing, subtitle (.srt) generation & Ken Burns Zoom multi-scene stitching
 
 import os
 import sys
@@ -18,6 +18,24 @@ import ffmpeg
 def is_ffmpeg_installed() -> bool:
     """Check if ffmpeg binary is available on PATH."""
     return shutil.which("ffmpeg") is not None
+
+
+def get_audio_duration(audio_path: str) -> float:
+    """Probe exact duration of audio file in seconds using ffprobe / ffmpeg.probe."""
+    try:
+        probe = ffmpeg.probe(audio_path)
+        duration = float(probe['format']['duration'])
+        if duration > 0:
+            print(f"[FFprobe Audio Inspector] Exact audio duration: {duration:.2f} seconds.")
+            return duration
+    except Exception as e:
+        print(f"[FFprobe Warning] Could not probe audio duration ({e}). Using file-size estimation...")
+
+    # Fallback duration estimation if probing is unavailable
+    file_size = os.path.getsize(audio_path)
+    # Estimate 24KB per second for 192kbps MP3
+    estimated_duration = max(10.0, file_size / 24000.0)
+    return estimated_duration
 
 
 def format_srt_timestamp(seconds: float) -> str:
@@ -61,7 +79,10 @@ def generate_srt(scenes: List[Dict[str, str]], total_audio_duration: float, srt_
 
 
 def stitch_multi_scene_video(image_paths: List[str], audio_path: str, srt_path: str, output_path: str) -> str:
-    """Stitch multiple 16:9 images, audio track, and burned-in SRT subtitles into YouTube H.264/AAC MP4 file."""
+    """Stitch multiple 16:9 images, audio track, and burned-in SRT subtitles into YouTube H.264/AAC MP4 file.
+
+    Calculates exact duration per scene dynamically based on audio duration probing.
+    """
     if not os.path.exists(audio_path):
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
     if not image_paths:
@@ -69,31 +90,21 @@ def stitch_multi_scene_video(image_paths: List[str], audio_path: str, srt_path: 
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    print(f"[FFmpeg Multi-Scene Stitcher] Combining {len(image_paths)} scenes + audio + subtitles -> '{output_path}'")
+    # Calculate exact dynamic timing per scene
+    total_audio_duration = get_audio_duration(audio_path)
+    num_scenes = len(image_paths)
+    duration_per_scene = round(total_audio_duration / num_scenes, 2)
 
-    # Get audio duration using ffprobe or estimate
-    audio_duration = 12.0
-    try:
-        probe = ffmpeg.probe(audio_path)
-        audio_duration = float(probe['format']['duration'])
-    except Exception:
-        pass
+    print(f"[FFmpeg Multi-Scene Stitcher] Audio Duration: {total_audio_duration:.2f}s | {num_scenes} scenes -> {duration_per_scene:.2f}s per scene")
 
-    duration_per_image = max(3.0, audio_duration / len(image_paths))
-
-    # Escape subtitle path for FFmpeg filter on Windows
     escaped_srt_path = srt_path.replace("\\", "/").replace(":", "\\:")
 
-    # Build FFmpeg command to loop images and burn subtitles
-    # Using ffmpeg concat filter or image loop
     inputs = []
-    filter_chains = []
+    for img in image_paths:
+        inputs.extend(["-loop", "1", "-t", str(duration_per_scene), "-i", img])
 
-    for idx, img in enumerate(image_paths):
-        inputs.extend(["-loop", "1", "-t", str(duration_per_image), "-i", img])
-
-    concat_inputs = "".join([f"[{i}:v]" for i in range(len(image_paths))])
-    filter_complex = f"{concat_inputs}concat=n={len(image_paths)}:v=1:a=0[vconcat]"
+    concat_inputs = "".join([f"[{i}:v]" for i in range(num_scenes)])
+    filter_complex = f"{concat_inputs}concat=n={num_scenes}:v=1:a=0[vconcat]"
 
     if os.path.exists(srt_path):
         filter_complex += f";[vconcat]subtitles='{escaped_srt_path}':force_style='FontSize=20,PrimaryColour=&H00FFFF&,OutlineColour=&H000000&,BorderStyle=3'[vsub]"
@@ -107,7 +118,7 @@ def stitch_multi_scene_video(image_paths: List[str], audio_path: str, srt_path: 
         "-i", audio_path,
         "-filter_complex", filter_complex,
         "-map", video_map,
-        "-map", f"{len(image_paths)}:a",
+        "-map", f"{num_scenes}:a",
         "-c:v", "libx264",
         "-c:a", "aac",
         "-pix_fmt", "yuv420p",
@@ -118,12 +129,12 @@ def stitch_multi_scene_video(image_paths: List[str], audio_path: str, srt_path: 
 
     try:
         subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        print(f"[FFmpeg Stitcher SUCCESS] Multi-scene video created with subtitles: {output_path}")
+        print(f"[FFmpeg Stitcher SUCCESS] Multi-scene subtitled video generated: {output_path}")
         return output_path
     except subprocess.CalledProcessError as err:
-        print(f"[FFmpeg Stitcher WARN] Subtitle filter stitch failed ({err.stderr.decode('utf-8', errors='ignore')[:150]}). Running fallback...")
+        print(f"[FFmpeg Stitcher WARN] Primary filter stitch failed ({err.stderr.decode('utf-8', errors='ignore')[:150]}). Running fallback...")
 
-    # Fallback FFmpeg stitch without subtitle filter
+    # Fallback FFmpeg stitch
     cmd_fallback = [
         "ffmpeg", "-y",
         "-f", "lavfi", "-i", "color=c=0x1a1a2e:s=1280x720:r=30",

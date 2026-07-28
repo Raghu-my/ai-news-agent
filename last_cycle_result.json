@@ -1,18 +1,23 @@
 ﻿{
-    "video_id":  "aa2db670-5e10-4f26-be93-3a6ecb14f654",
+    "video_id":  "76cd96b1-0000-4170-84c7-edb609d8ffd1",
     "topic":  "The rise of autonomous AI coding agents",
-    "script":  "Breaking news on The rise of autonomous AI coding agents. AI automation is reshaping enterprise computing. Autonomous agents are now writing and verifying code faster than human developers. Industry leaders predict unprecedented productivity gains across global technology sectors.",
-    "title":  "Autonomous AI Coding Agents: The END of Programming As We Know It? | Future of Software Dev",
-    "description":  "Latest breaking AI tech news regarding The rise of autonomous AI coding agents.\n\n#AINews #TechNews #ArtificialIntelligence",
+    "script":  "Welcome to an in-depth documentary report on The rise of autonomous AI coding agents. Software architecture is undergoing a dramatic shift. Autonomous coding agents are no longer experimental concepts; they are actively writing enterprise production code. Deep learning models process complex pull requests, refactor legacy codebases, and optimize cloud infrastructure in seconds. Engineering teams report a tenfold increase in feature deployment velocity as autonomous agents handle repetitive tasks. Security scanning and vulnerability patching are now executed in real time, preventing breaches before code is deployed. Despite rapid technical adoption, questions around code governance, intellectual property, and safety compliance remain prominent. Senior technology leaders emphasize that human oversight and architectural intuition are more critical than ever. As foundational models evolve, agentic workflows seamlessly integrate across continuous integration pipelines. The future of software development belongs to hybrid human-AI engineering organizations operating at unprecedented scale. This concludes our special documentary report on The rise of autonomous AI coding agents. Subscribe for more autonomous AI engineering updates.",
+    "title":  "Autonomous AI Coding Agents: The Future of Coding is Here! (Developers BEWARE?)",
+    "description":  "Autonomous AI coding agents are no longer science fiction â they\u0027re here, writing, debugging, and deploying code on their own! Discover how this revolutionary technology is set to reshape the software industry, enhance productivity, and what it means for human developers. Are we witnessing the dawn of truly self-sufficient software development? #AICoding #FutureOfTech #AutonomousAI",
     "tags":  [
-                 "AI",
-                 "TechNews",
-                 "AINewsAgent",
-                 "VertexAI",
-                 "GoogleCloud"
+                 "AI coding agents",
+                 "autonomous AI",
+                 "future of programming",
+                 "software development",
+                 "AI developers",
+                 "code generation",
+                 "AI automation",
+                 "tech news",
+                 "AI breakthroughs",
+                 "developer jobs"
              ],
-    "audio_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/audio/news_hook_177b1231.mp3",
-    "video_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/video/storyboard_aa2db670.mp4",
-    "youtube_url":  "https://www.youtube.com/watch?v=oSEte7lqskU",
+    "audio_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/audio/news_hook_f60f59fd.mp3",
+    "video_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/video/storyboard_76cd96b1.mp4",
+    "youtube_url":  "https://www.youtube.com/watch?v=AQ48WiXJkWg",
     "status":  "PUBLISHED"
 }
