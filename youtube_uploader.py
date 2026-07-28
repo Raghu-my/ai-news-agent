@@ -34,7 +34,6 @@ def get_youtube_credentials() -> Optional[Credentials]:
         return None
 
     try:
-        # Secret can be a raw refresh token string or a JSON object containing client_id & refresh_token
         if raw_secret.strip().startswith("{"):
             secret_dict = json.loads(raw_secret)
             return Credentials(
@@ -66,29 +65,44 @@ def upload_to_youtube(
     title: str,
     description: str,
     tags: Optional[List[str]] = None,
-    category_id: str = "28", # 28 = Science & Technology
-    privacy_status: str = "unlisted"
+    category_id: str = "28",  # 28 = Science & Technology
+    privacy_status: str = "public"
 ) -> str:
-    """Upload a video file to YouTube via YouTube Data API v3 and return watch URL."""
+    """Upload a video file to YouTube via YouTube Data API v3 with strict SEO metadata and return watch URL."""
     if not os.path.exists(video_file_path):
         raise FileNotFoundError(f"Video file to upload not found: {video_file_path}")
 
+    # File size validation (Must be at least 50KB)
+    file_size_kb = os.path.getsize(video_file_path) / 1024
+    if file_size_kb < 50:
+        raise ValueError(f"Video file {video_file_path} is corrupt or smaller than 50KB ({file_size_kb:.2f}KB)")
+
     creds = get_youtube_credentials()
+
+    # Format tags list cleanly
+    formatted_tags = []
+    if tags:
+        for t in tags:
+            if isinstance(t, str):
+                formatted_tags.extend([x.strip() for x in t.split(",") if x.strip()])
+    if not formatted_tags:
+        formatted_tags = ["AI", "TechNews", "AINewsAgent", "GoogleCloud", "VertexAI", "Automation", "Python", "Software", "Technology", "Innovation"]
 
     if creds:
         try:
-            print(f"[YouTube Uploader] Initiating upload for '{title}'...")
+            print(f"[YouTube Uploader] Initiating upload for '{title}' (Category: {category_id}, Privacy: {privacy_status})...")
             youtube = build("youtube", "v3", credentials=creds)
 
             body = {
                 "snippet": {
                     "title": title[:100],
                     "description": description,
-                    "tags": tags or ["AI", "TechNews", "AINewsAgent"],
+                    "tags": formatted_tags[:15],
                     "categoryId": category_id
                 },
                 "status": {
-                    "privacyStatus": privacy_status
+                    "privacyStatus": privacy_status,
+                    "selfDeclaredMadeForKids": False
                 }
             }
 
@@ -112,7 +126,6 @@ def upload_to_youtube(
 
         except Exception as e:
             print(f"[YouTube Uploader Error] API Upload failed: {e}")
-            # Dev fallback URL structure for testing environments
             mock_id = f"dev_{os.urandom(4).hex()}"
             return f"https://www.youtube.com/watch?v={mock_id}"
     else:

@@ -1,9 +1,23 @@
 ﻿{
-    "video_id":  "92d0141f-6483-4b8e-aed4-b433ed90dea3",
+    "video_id":  "035c3f82-7280-4cf3-be46-4ddfe1ea48c3",
     "topic":  "The rise of autonomous AI coding agents",
-    "script":  "Breaking News: The tech",
-    "audio_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/audio/news_hook_a6751169.mp3",
-    "video_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/video/veo_broll_ecf4aab2.mp4",
-    "youtube_url":  "https://www.youtube.com/watch?v=BPbb8FebCRk",
+    "script":  "Breaking news, tech fanatics! Autonomous AI coding agents are no longer a sci-fi dream; they\u0027re here, writing code, debugging projects, and potentially revolutionizing software development as we know it.",
+    "title":  "Autonomous AI Coding Agents: The END of Developers?! (They\u0027re HERE)",
+    "description":  "Get ready for a seismic shift in software development! Autonomous AI coding agents are rapidly evolving, capable of writing, testing, and even deploying code with minimal human oversight. Are they our new co-pilots, or are they set to completely transform the role of traditional developers? Dive into the future of coding with me! #AICoding #AutonomousAI #FutureOfDev",
+    "tags":  [
+                 "AI coding agents",
+                 "autonomous AI",
+                 "AI developers",
+                 "future of coding",
+                 "software development",
+                 "AI tools",
+                 "GPT agents",
+                 "coding automation",
+                 "developer tools",
+                 "AI revolution"
+             ],
+    "audio_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/audio/news_hook_79b9a6c0.mp3",
+    "video_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/video/veo_broll_8ee93580.mp4",
+    "youtube_url":  "https://www.youtube.com/watch?v=ke4OGcPJm7g",
     "status":  "PUBLISHED"
 }
