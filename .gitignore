@@ -1,0 +1,14 @@
+venv/
+temp_media/
+client_secret.json
+client_secret.json.json
+__pycache__/
+*.pyc
+*.pyo
+.env
+.env.*
+.vscode/
+.idea/
+.system_generated/
+*.log
+last_cycle_result.json
