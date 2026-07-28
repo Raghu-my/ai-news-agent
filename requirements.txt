@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+google-cloud-texttospeech
+google-cloud-storage
+google-cloud-secret-manager
+google-genai
+google-api-python-client
+google-auth-oauthlib
+psycopg2-binary
+ffmpeg-python

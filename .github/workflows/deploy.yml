@@ -1,0 +1,75 @@
+name: Deploy AI News Agent to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: gen-lang-client-0771706827
+  REGION: us-central1
+  SERVICE_NAME: ai-news-agent
+  GCS_BUCKET_NAME: gen-lang-client-0771706827-media-vault
+  WORKLOAD_IDENTITY_PROVIDER: projects/323026525155/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
+  SERVICE_ACCOUNT: github-actions-sa@gen-lang-client-0771706827.iam.gserviceaccount.com
+  REPOSITORY: ai-news-agent-repo
+
+jobs:
+  deploy:
+    name: Build & Deploy Serverless FastAPI Backend
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud via Workload Identity Federation
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Ensure Artifact Registry Repository Exists
+        run: |
+          gcloud artifacts repositories describe ${{ env.REPOSITORY }} --location=${{ env.REGION }} || \
+          gcloud artifacts repositories create ${{ env.REPOSITORY }} \
+            --repository-format=docker \
+            --location=${{ env.REGION }} \
+            --description="Docker repository for AI News Agent"
+
+      - name: Build and Push Container Image
+        env:
+          IMAGE_URI: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+        run: |
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Deploy Container to Google Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          env_vars: |
+            GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}
+            GOOGLE_CLOUD_REGION=${{ env.REGION }}
+            GCS_BUCKET_NAME=${{ env.GCS_BUCKET_NAME }}
+          flags: |
+            --allow-unauthenticated
+            --memory=1Gi
+            --cpu=1
+            --min-instances=0
+            --max-instances=5

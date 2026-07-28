@@ -1,0 +1,9 @@
+﻿{
+    "video_id":  "c38c5006-c3d8-4259-8d06-0854fe565185",
+    "topic":  "The rise of autonomous AI coding agents",
+    "script":  "The very nature of software development is undergoing a seismic shift, as autonomous AI coding agents are now independently writing, debugging, and deploying complex applications. This groundbreaking technology promises to accelerate innovation and redefine the roles of human developers across every industry.",
+    "audio_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/audio/news_hook_17dae819.mp3",
+    "video_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/video/veo_broll_fcb16322.mp4",
+    "status":  "PUBLISHED",
+    "youtube_url":  "https://www.youtube.com/watch?v=ytx4TRoUxi4"
+}
