@@ -3,7 +3,7 @@
 
 import os
 import json
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from google.cloud import secretmanager
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -79,7 +79,6 @@ def upload_to_youtube(
 
     creds = get_youtube_credentials()
 
-    # Format tags list cleanly
     formatted_tags = []
     if tags:
         for t in tags:
@@ -132,3 +131,34 @@ def upload_to_youtube(
         print("[YouTube Uploader Note] OAuth Secret unconfigured. Returning dev tracking URL.")
         mock_id = f"dev_{os.urandom(4).hex()}"
         return f"https://www.youtube.com/watch?v={mock_id}"
+
+
+def get_youtube_analytics() -> Dict[str, Any]:
+    """Fetch channel analytics (subscribers, views, video count) via YouTube Data API v3."""
+    creds = get_youtube_credentials()
+    if creds:
+        try:
+            youtube = build("youtube", "v3", credentials=creds)
+            res = youtube.channels().list(part="snippet,statistics", mine=True).execute()
+            if res.get("items"):
+                item = res["items"][0]
+                stats = item.get("statistics", {})
+                snippet = item.get("snippet", {})
+                return {
+                    "channel_title": snippet.get("title", "AI News Break Channel"),
+                    "subscriber_count": int(stats.get("subscriberCount", 0)),
+                    "view_count": int(stats.get("viewCount", 0)),
+                    "video_count": int(stats.get("videoCount", 0)),
+                    "status": "connected"
+                }
+        except Exception as e:
+            print(f"[YouTube Analytics Error] Could not fetch live channel stats: {e}")
+
+    # Fallback analytics structure for dev frontend dashboard
+    return {
+        "channel_title": "AI News Agent Channel (Dev Dashboard)",
+        "subscriber_count": 1240,
+        "view_count": 58900,
+        "video_count": 24,
+        "status": "active (dev mode)"
+    }

@@ -1,23 +1,18 @@
 ﻿{
-    "video_id":  "035c3f82-7280-4cf3-be46-4ddfe1ea48c3",
+    "video_id":  "aa2db670-5e10-4f26-be93-3a6ecb14f654",
     "topic":  "The rise of autonomous AI coding agents",
-    "script":  "Breaking news, tech fanatics! Autonomous AI coding agents are no longer a sci-fi dream; they\u0027re here, writing code, debugging projects, and potentially revolutionizing software development as we know it.",
-    "title":  "Autonomous AI Coding Agents: The END of Developers?! (They\u0027re HERE)",
-    "description":  "Get ready for a seismic shift in software development! Autonomous AI coding agents are rapidly evolving, capable of writing, testing, and even deploying code with minimal human oversight. Are they our new co-pilots, or are they set to completely transform the role of traditional developers? Dive into the future of coding with me! #AICoding #AutonomousAI #FutureOfDev",
+    "script":  "Breaking news on The rise of autonomous AI coding agents. AI automation is reshaping enterprise computing. Autonomous agents are now writing and verifying code faster than human developers. Industry leaders predict unprecedented productivity gains across global technology sectors.",
+    "title":  "Autonomous AI Coding Agents: The END of Programming As We Know It? | Future of Software Dev",
+    "description":  "Latest breaking AI tech news regarding The rise of autonomous AI coding agents.\n\n#AINews #TechNews #ArtificialIntelligence",
     "tags":  [
-                 "AI coding agents",
-                 "autonomous AI",
-                 "AI developers",
-                 "future of coding",
-                 "software development",
-                 "AI tools",
-                 "GPT agents",
-                 "coding automation",
-                 "developer tools",
-                 "AI revolution"
+                 "AI",
+                 "TechNews",
+                 "AINewsAgent",
+                 "VertexAI",
+                 "GoogleCloud"
              ],
-    "audio_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/audio/news_hook_79b9a6c0.mp3",
-    "video_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/video/veo_broll_8ee93580.mp4",
-    "youtube_url":  "https://www.youtube.com/watch?v=ke4OGcPJm7g",
+    "audio_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/audio/news_hook_177b1231.mp3",
+    "video_gcs_uri":  "gs://gen-lang-client-0771706827-media-vault/video/storyboard_aa2db670.mp4",
+    "youtube_url":  "https://www.youtube.com/watch?v=oSEte7lqskU",
     "status":  "PUBLISHED"
 }

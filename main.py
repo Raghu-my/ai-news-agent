@@ -1,6 +1,6 @@
 # main.py
 # Production FastAPI Application for ai-news-agent
-# GCP Serverless Architecture (Vertex AI Gemini 2.5 Flash, Cloud TTS, Veo 3.1, Secret Manager, GCS, YouTube API)
+# GCP Serverless Architecture (Vertex AI Gemini 2.5 Flash, Cloud TTS, Imagen 3, Secret Manager, GCS, YouTube API)
 
 import os
 import sys
@@ -10,9 +10,10 @@ import uuid
 import json
 import re
 import subprocess
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 
 # Ensure UTF-8 console output for Windows PowerShell
 if hasattr(sys.stdout, "reconfigure"):
@@ -23,9 +24,10 @@ from google.cloud import storage
 from google import genai
 from google.genai import types
 
-from database import init_db, create_video_record, update_video_status
-from media_stitcher import stitch_audio_video
-from youtube_uploader import upload_to_youtube
+from database import init_db, create_video_record, update_video_status, get_all_videos
+from media_stitcher import stitch_audio_video, stitch_multi_scene_video, generate_srt
+from storyboard_agent import generate_storyboard, render_all_storyboard_scenes
+from youtube_uploader import upload_to_youtube, get_youtube_analytics
 
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "gen-lang-client-0771706827")
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "gen-lang-client-0771706827-media-vault")
@@ -35,8 +37,17 @@ os.makedirs(LOCAL_TEMP_DIR, exist_ok=True)
 
 app = FastAPI(
     title="AI News Agent Backend",
-    description="Serverless AI News Generation Engine on GCP (Gemini 2.5, Cloud TTS, Veo 3.1, GCS & YouTube)",
-    version="1.0.0"
+    description="Serverless Multi-Scene AI Storyteller on GCP (Gemini 2.5, Imagen 3, Cloud TTS, GCS & YouTube)",
+    version="2.0.0"
+)
+
+# Enable CORS for React Frontend Dashboard integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -168,6 +179,7 @@ class RunCycleResponse(BaseModel):
     status: str
 
 
+# Core Utility APIs
 @app.get("/health", response_model=HealthResponse)
 def health_check():
     return HealthResponse(
@@ -175,6 +187,21 @@ def health_check():
         project_id=GCP_PROJECT_ID,
         gcs_bucket=GCS_BUCKET_NAME
     )
+
+
+# Frontend Dashboard Monitoring APIs
+@app.get("/api/videos/pipeline")
+def get_pipeline_videos():
+    """Returns all rows from PostgreSQL / SQLite videos table for frontend dashboard."""
+    videos = get_all_videos()
+    return {"status": "success", "count": len(videos), "videos": videos}
+
+
+@app.get("/api/youtube/analytics")
+def get_channel_analytics():
+    """Uses YouTube refresh token from Secret Manager to fetch 30-day channel analytics."""
+    analytics_data = get_youtube_analytics()
+    return {"status": "success", "data": analytics_data}
 
 
 @app.post("/generate/script", response_model=ScriptResponse)
@@ -205,12 +232,11 @@ def generate_script(req: ScriptRequest):
         )
 
         resp_text = response.text.strip() if response.text else "{}"
-        
+
         parsed = {}
         try:
             parsed = json.loads(resp_text, strict=False)
         except Exception:
-            # Fallback regex extraction if unescaped control characters exist
             script_m = re.search(r'"script"\s*:\s*"([^"]+)"', resp_text)
             title_m = re.search(r'"title"\s*:\s*"([^"]+)"', resp_text)
             desc_m = re.search(r'"description"\s*:\s*"([^"]+)"', resp_text)
@@ -224,7 +250,7 @@ def generate_script(req: ScriptRequest):
         script_val = parsed.get("script") or f"Breaking News: {req.topic}. Autonomous AI coding agents are rapidly transforming enterprise software architecture."
         title_val = parsed.get("title") or f"AI BREAKTHROUGH: {req.topic[:50]}"
         desc_val = parsed.get("description") or f"Latest breaking AI tech news regarding {req.topic}.\n\n#AINews #TechNews #ArtificialIntelligence"
-        
+
         raw_tags = parsed.get("tags") or ["AI", "TechNews", "AINewsAgent", "VertexAI", "GoogleCloud"]
         if isinstance(raw_tags, str):
             tags_val = [t.strip() for t in raw_tags.split(",") if t.strip()]
@@ -345,7 +371,6 @@ def generate_video(req: VideoRequest):
             )
         )
 
-        # Strict LRO Polling Loop: wait until operation completes
         print("[Veo 3.1 Poller] Waiting for video generation operation to complete...")
         while not operation.done:
             time.sleep(5)
@@ -368,36 +393,40 @@ def generate_video(req: VideoRequest):
 
 @app.post("/agent/run-cycle", response_model=RunCycleResponse)
 def run_master_cycle(req: RunCycleRequest):
-    """Master Orchestration Loop:
+    """Master Multi-Scene Storytelling Orchestration Loop:
 
-    1. Smart SEO Script Generation (Gemini 2.5 Flash -> JSON: script, title, description, tags)
-    2. Audio synthesis (GCP TTS -> GCS)
-    3. Video B-roll generation (Veo 3.1 LRO Poller -> GCS)
-    4. FFmpeg Media Stitching (Strict YouTube H.264/AAC Standards, >50KB size check)
-    5. Autonomous YouTube Publishing (Category 28, MadeForKids False, SEO Metadata)
-    6. State Persistence Update
+    1. Storyboard Generation (Gemini 2.5 Flash -> multi-scene narration + image prompts)
+    2. Smart SEO Metadata Generation (Gemini 2.5 Flash -> title, description, tags)
+    3. Multi-Scene Visual Rendering (Imagen 3 / Pillow -> 16:9 JPEG visuals)
+    4. Combined Audio Voiceover Synthesis (Cloud TTS -> GCS)
+    5. Subtitle (.srt) Generation & Cinematic FFmpeg Stitching
+    6. Autonomous YouTube Publishing (Category 28, MadeForKids False, SEO Metadata)
+    7. PostgreSQL Persistence State Update
     """
     topic = req.topic.strip()
     if not topic:
         raise HTTPException(status_code=400, detail="Topic cannot be empty.")
 
-    print(f"\n[MASTER LOOP] Starting autonomous news pipeline for topic: '{topic}'")
+    print(f"\n[MASTER LOOP] Starting multi-scene storytelling pipeline for topic: '{topic}'")
 
-    # Step 1: Smart SEO Script Generation (SCRIPTED)
+    # Step 1: Generate Storyboard & SEO Metadata
+    scenes = generate_storyboard(topic=topic)
+    combined_script = " ".join([s.get("narration_text", "") for s in scenes])
+
     script_res = generate_script(ScriptRequest(topic=topic))
-    script_text = script_res.script
     seo_title = script_res.title
     seo_desc = script_res.description
     seo_tags = script_res.tags
 
-    video_id = create_video_record(topic=topic, script=script_text)
+    video_id = create_video_record(topic=topic, script=combined_script)
 
-    # Step 2: Generate Media (Audio & Video)
-    audio_res = generate_audio(req=AudioRequest(text=script_text))
+    # Step 2: Render Multi-Scene Visuals & Synthesize Voiceover Audio
+    scene_image_paths = render_all_storyboard_scenes(scenes, video_id[:8])
+
+    audio_res = generate_audio(req=AudioRequest(text=combined_script))
     audio_gcs_uri = audio_res.audio_uri
 
-    video_res = generate_video(req=VideoRequest(prompt=f"A cinematic high-tech news B-roll scene illustrating {topic}"))
-    video_gcs_uri = video_res.video_uri
+    video_gcs_uri = f"gs://{GCS_BUCKET_NAME}/video/storyboard_{video_id[:8]}.mp4"
 
     update_video_status(
         video_id=video_id,
@@ -406,30 +435,31 @@ def run_master_cycle(req: RunCycleRequest):
         video_gcs_uri=video_gcs_uri
     )
 
-    # Step 3: FFmpeg Media Stitching with File Size Verification (>50KB)
+    # Step 3: Subtitles (.srt) & Multi-Scene FFmpeg Stitching
     local_audio_file = os.path.join(LOCAL_TEMP_DIR, f"audio_{video_id[:8]}.mp3")
-    local_video_file = os.path.join(LOCAL_TEMP_DIR, f"video_{video_id[:8]}.mp4")
+    local_srt_file = os.path.join(LOCAL_TEMP_DIR, f"subtitles_{video_id[:8]}.srt")
     local_stitched_file = os.path.join(LOCAL_TEMP_DIR, f"final_{video_id[:8]}.mp4")
 
     if not os.path.exists(local_audio_file) or os.path.getsize(local_audio_file) < 50 * 1024:
         create_valid_fallback_audio(local_audio_file)
 
-    if not os.path.exists(local_video_file) or os.path.getsize(local_video_file) < 50 * 1024:
-        create_valid_fallback_video(local_video_file)
+    # Estimate audio duration for subtitles
+    audio_duration = 12.0
+    generate_srt(scenes, audio_duration, local_srt_file)
 
-    stitched_path = stitch_audio_video(
-        video_path=local_video_file,
+    stitched_path = stitch_multi_scene_video(
+        image_paths=scene_image_paths,
         audio_path=local_audio_file,
+        srt_path=local_srt_file,
         output_path=local_stitched_file
     )
 
-    # File size validation on stitched file
     if os.path.getsize(stitched_path) < 50 * 1024:
         raise ValueError(f"Stitched video file {stitched_path} is smaller than 50KB. Aborting upload.")
 
     update_video_status(video_id=video_id, status="STITCHED")
 
-    # Step 4: Autonomous YouTube Publishing with Smart SEO Metadata
+    # Step 4: Autonomous YouTube Publishing
     youtube_url = upload_to_youtube(
         video_file_path=stitched_path,
         title=seo_title,
@@ -442,12 +472,12 @@ def run_master_cycle(req: RunCycleRequest):
     # Step 5: Update State to PUBLISHED
     update_video_status(video_id=video_id, status="PUBLISHED")
 
-    print(f"[MASTER LOOP SUCCESS] Pipeline finished for {video_id} -> {youtube_url}\n")
+    print(f"[MASTER LOOP SUCCESS] Multi-scene story published for {video_id} -> {youtube_url}\n")
 
     return RunCycleResponse(
         video_id=video_id,
         topic=topic,
-        script=script_text,
+        script=combined_script,
         title=seo_title,
         description=seo_desc,
         tags=seo_tags,

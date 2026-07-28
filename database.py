@@ -7,7 +7,6 @@ import datetime
 from typing import List, Dict, Any, Optional
 
 # Database connection URL from environment variable
-# e.g., postgresql://user:password@localhost:5432/ainews
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Check if psycopg2 or sqlite3 should be used
@@ -153,6 +152,26 @@ def get_pending_videos() -> List[Dict[str, Any]]:
         result = [dict(zip(columns, row)) for row in rows]
     else:
         cursor.execute("SELECT * FROM videos WHERE status != 'PUBLISHED' ORDER BY created_at ASC")
+        rows = cursor.fetchall()
+        result = [dict(row) for row in rows]
+
+    cursor.close()
+    conn.close()
+    return result
+
+
+def get_all_videos() -> List[Dict[str, Any]]:
+    """Retrieve all video records from database for dashboard pipeline view."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if USE_POSTGRES:
+        cursor.execute("SELECT * FROM videos ORDER BY created_at DESC")
+        columns = [desc[0] for desc in cursor.description]
+        rows = cursor.fetchall()
+        result = [dict(zip(columns, row)) for row in rows]
+    else:
+        cursor.execute("SELECT * FROM videos ORDER BY created_at DESC")
         rows = cursor.fetchall()
         result = [dict(row) for row in rows]
 
